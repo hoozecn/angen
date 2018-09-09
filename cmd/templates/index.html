@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>生成器 v1.0</title>
+    <link href="https://cdn.bootcss.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container" style="margin-top: 20px">
+    <form>
+        <div class="form-group">
+            <label for="n_char">字母: </label>
+            <input class="form-control" type="number" name="n_char" id="n_char" value="1">
+        </div>
+        <div class="form-group">
+            <label for="n_num">数字: </label>
+            <input class="form-control" type="number" name="n_num" id="n_num" value="2">
+        </div>
+
+        <div class="form-group">
+            <label for="n_total">数量: </label>
+            <input class="form-control" type="number" name="n_num" id="n_total" value="10000">
+        </div>
+
+        <div class="form-group">
+            <label for="p_offset">偏移量: </label>
+            <input class="form-control" id="p_offset" value="0"/>
+        </div>
+
+        <button class="btn btn-primary" id="action_test">测试 (2字母, 2数字)</button>
+        <button class="btn btn-primary" id="action_produce">生成</button>
+        <button class="btn btn-primary" id="action_reset">重置偏移量</button>
+
+        <div class="form-group" style="margin-top: 20px">
+            <label for="">
+                剩余可生成数量: <span id="p_total"></span>
+            </label>
+        </div>
+        <div class="form-group">
+            <label for="">
+                预计时间: <span id="p_time"></span>
+            </label>
+        </div>
+    </form>
+</div>
+
+<script>
+    const $n_char = document.querySelector("#n_char");
+    const $n_num = document.querySelector("#n_num");
+    const $n_total = document.querySelector('#n_total');
+    const $p_total = document.querySelector('#p_total');
+    const $p_time = document.querySelector('#p_time');
+    const $p_offset = document.querySelector('#p_offset');
+
+    function getOffsetKey(nc, nm) {
+        return "offset_" + nc + "_" + nm;
+    }
+
+    function getOffset(nc, nm) {
+        let item = localStorage.getItem(getOffsetKey(nc, nm));
+        if (item) {
+            let v = parseInt(item);
+            if (v) {
+                return v
+            }
+        }
+
+        return 0;
+    }
+
+    function setOffset(nc, nm, offset) {
+        localStorage.setItem(getOffsetKey(nc, nm), "" + offset)
+    }
+
+    function factorial(num) {
+        if (num < 0) {
+            return -1;
+        } else if (num === 0 || num === 1) {
+            return 1;
+        } else {
+            for (var i = num - 1; i >= 1; i--) {
+                num *= i;
+            }
+        }
+        return num;
+    }
+
+    function c(n, m) {
+        return factorial(m + n) / (factorial(m) * factorial(n));
+    }
+
+    function gen(seq, n) {
+        let ret = [];
+        for (let i = 0; i < Math.pow(seq.length, n); i++) {
+            let s = "";
+            for (let j = 0; j < n; j++) {
+                s += seq[parseInt(i / Math.pow(seq.length, n - 1 - j))];
+                i = i % Math.pow(seq.length, n - 1 - j);
+            }
+            ret.push(s);
+        }
+
+        return ret
+    }
+
+    function getTotal(nc, nn) {
+        return Math.pow(26, nc) * Math.pow(10, nn) * (nc * nn + 1);
+    }
+
+    const onChange = function () {
+        const n_char = parseInt($n_char.value);
+        const n_num = parseInt($n_num.value);
+        let n_total = parseInt($n_total.value);
+
+        if (!isNaN(n_char) && !isNaN(n_num) && n_char >= 0 && n_num >= 0) {
+            if (isNaN(n_total)) {
+                n_total = 10000;
+            }
+
+            let p_total = getTotal(n_char, n_num);
+            let p_offset = getOffset(n_char, n_num);
+            let p_count = Math.max(0, Math.min(p_total - p_offset, n_total));
+            let p_time = p_count * 0.0000138;
+
+            $p_time.innerText = "" + p_time + "秒";
+            $p_total.innerText = Math.max(0, p_total - p_offset);
+            $p_offset.value = p_offset;
+        }
+    };
+
+    $n_char.onchange = onChange;
+    $n_num.onchange = onChange;
+    $n_total.onchange = onChange;
+    $p_offset.onchange = function () {
+        const n_char = parseInt($n_char.value);
+        const n_num = parseInt($n_num.value);
+        const p_offset = parseInt($p_offset.value);
+
+        if (!isNaN(n_char) && !isNaN(n_num) && n_char >= 0 && n_num >= 0 && p_offset >= 0) {
+            setOffset(n_char, n_num, parseInt($p_offset.value));
+            onChange()
+        }
+    };
+
+    onChange();
+
+    document.querySelector("#action_produce").onclick = function (e) {
+        e.preventDefault();
+        const n_char = parseInt($n_char.value);
+        const n_num = parseInt($n_num.value);
+        const n_total = parseInt($n_total.value);
+
+        if (!isNaN(n_char) && !isNaN(n_num) && n_char >= 0 && n_num >= 0 && n_total > 0) {
+            let offset = getOffset(n_char, n_num);
+            setOffset(n_char, n_num, Math.min(offset + n_total, getTotal(n_char, n_num)));
+            onChange();
+            window.open(`/download?nn=${n_num}&nc=${n_char}&count=${n_total}&offset=${offset}`)
+        }
+    };
+
+    document.querySelector("#action_test").onclick = function (e) {
+        e.preventDefault();
+        window.open(`/download?nn=2&nc=2&count=${getTotal(2, 2)}`)
+    };
+
+    document.querySelector('#action_reset').onclick = function (e) {
+        e.preventDefault();
+        const n_char = parseInt($n_char.value);
+        const n_num = parseInt($n_num.value);
+
+        if (!isNaN(n_char) && !isNaN(n_num) && n_char >= 0 && n_num >= 0) {
+            setOffset(n_char, n_num, 0);
+            onChange()
+        }
+    }
+
+</script>
+</body>
+</html>
