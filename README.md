@@ -6,7 +6,7 @@
 2. 计算总共可以生成的数量
 3. 批量生成不重复的字符串
 
-An alphabe + number string generator
+An alphabet + number string generator
 
 1. amount of alphabets and number can be customized
 2. total number of generate results will be predicated
