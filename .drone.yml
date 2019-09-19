@@ -1,0 +1,20 @@
+kind: pipeline
+type: docker
+name: backend
+
+steps:
+- name: build
+  image: golang
+  commands:
+  - go version
+
+---
+kind: pipeline
+type: docker
+name: frontend
+
+steps:
+- name: build
+  image: node
+  commands:
+  - npm --version
